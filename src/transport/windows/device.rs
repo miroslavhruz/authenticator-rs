@@ -10,10 +10,15 @@ use crate::ctap2::commands::get_info::AuthenticatorInfo;
 use crate::transport::hid::HIDDevice;
 use crate::transport::{FidoDevice, FidoProtocol, HIDError, SharedSecret};
 use crate::u2ftypes::U2FDeviceInfo;
+#[cfg(unix)]
+use libc::c_void as platform_c_void;
 use std::fs::{File, OpenOptions};
 use std::hash::{Hash, Hasher};
 use std::io::{self, Read, Write};
 use std::os::windows::io::AsRawHandle;
+
+#[cfg(windows)]
+use winapi::ctypes::c_void as platform_c_void;
 
 #[derive(Debug)]
 pub struct Device {
@@ -141,7 +146,7 @@ impl FidoDevice for Device {
     }
 
     fn is_u2f(&mut self) -> bool {
-        match DeviceCapabilities::new(self.file.as_raw_handle()) {
+        match DeviceCapabilities::new(self.file.as_raw_handle() as *mut platform_c_void) {
             Ok(caps) => caps.usage() == FIDO_USAGE_U2FHID && caps.usage_page() == FIDO_USAGE_PAGE,
             _ => false,
         }
